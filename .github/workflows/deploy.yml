@@ -30,7 +30,7 @@ jobs:
 
           # Clone repo only first time
           if [ ! -d "Argocd-setup" ]; then
-              git clone https://github.com/RajatJaiwal/Argocd-setup.git
+              git clone -b https://github.com/RajatJaiwal/Argocd-setup.git
           fi
 
           # Pull latest changes
