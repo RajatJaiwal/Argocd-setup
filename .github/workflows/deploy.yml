@@ -1,74 +1,66 @@
-
-
-
-# Workflow name shown in GitHub Actions
 name: Deploy K3s + ArgoCD to EC2
 
-# Trigger pipeline when code is pushed to main branch
 on:
-  pull_request: 
-    
+  pull_request:
 
 jobs:
   deploy:
-    # GitHub runner environment
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository code
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2
-
       - name: Setup SSH Connection
         run: |
-           mkdir -p ~/.ssh
-           cp Argocd/deployargocd/Ec2.pem ~/.ssh/id_rsa
-           chmod 600 ~/.ssh/id_rsa
-           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          cp Argocd/deployargocd/Ec2.pem ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # Step 3: SSH into EC2 and execute deployment scripts
       - name: Deploy K3s and ArgoCD on EC2
         run: |
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
 
-            echo "Connected to EC2 instance"
+          echo "Connected to EC2 instance"
 
-            # Create working directory
-            mkdir -p ~/Argocd-setup
-            cd ~/Argocd-setup
+          mkdir -p ~/Argocd-setup
+          cd ~/Argocd-setup
 
-            # Clone repository
-            git clone https://github.com/RajatJaiwal/Argocd-setup.git
+          # Clone repo only first time
+          if [ ! -d "Argocd-setup" ]; then
+              git clone https://github.com/RajatJaiwal/Argocd-setup.git
+          fi
 
-            # Navigate to deployment scripts directory
-            cd Argocd-setup/Argocd/deployargocd/
+          # Pull latest changes
+          cd Argocd-setup
+          git pull origin main
 
-            # Show files for confirmation
-            echo "Files available in deployment directory:"
-            ls
+          echo "Current directory:"
+          pwd
 
-            # Give execute permission to scripts
-            chmod +x deploycluster.sh setupargocd.sh
+          echo "Repo contents:"
+          ls
 
-            # -----------------------------
-            # Stage 1 : Deploy K3s Cluster
-            # -----------------------------
-            echo "Starting K3s cluster deployment..."
-            ./deploycluster.sh
+          # Navigate to scripts
+          cd Argocd/deployargocd
 
-            echo "Cluster setup completed"
+          echo "Deployment directory contents:"
+          ls
 
-            # Wait a little for cluster stabilization
-            sleep 20
+          chmod +x deploycluster.sh setupargocd.sh
 
-            # -----------------------------
-            # Stage 2 : Setup ArgoCD
-            # -----------------------------
-            echo "Starting ArgoCD setup..."
-            ./setupargocd.sh
+          echo "Starting K3s cluster deployment..."
+          ./deploycluster.sh
 
-            echo "ArgoCD setup completed successfully"
+          echo "Cluster setup completed"
+
+          sleep 20
+
+          echo "Starting ArgoCD setup..."
+          ./setupargocd.sh
+
+          echo "ArgoCD setup completed successfully"
 
           EOF
