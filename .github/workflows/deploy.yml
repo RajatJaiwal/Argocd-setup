@@ -1,0 +1,64 @@
+name: Deploy K3s + ArgoCD to EC2
+
+on:
+  pull_request:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Connection
+        run: |
+          mkdir -p ~/.ssh
+          cp Argocd/deployargocd/Ec2.pem ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy K3s and ArgoCD on EC2
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+
+          echo "Connected to EC2 instance"
+
+          mkdir -p ~/Argocd-setup
+          cd ~/Argocd-setup
+
+          # Clone repo first time
+          if [ ! -d "Argocd-setup" ]; then
+              git clone -b ${{ github.head_ref }} https://github.com/RajatJaiwal/Argocd-setup.git
+          fi
+
+          cd Argocd-setup
+          git pull origin ${{ github.head_ref }}
+
+          echo "Current directory:"
+          pwd
+
+          echo "Repo contents:"
+          ls -R
+
+          cd Argocd/deployargocd
+
+          echo "Deployment directory contents:"
+          ls
+
+          chmod +x deploycluster.sh setupargocd.sh
+
+          echo "Starting K3s cluster deployment..."
+          ./deploycluster.sh
+
+          echo "Cluster setup completed"
+
+          sleep 20
+
+          echo "Starting ArgoCD setup..."
+          ./setupargocd.sh
+
+          echo "ArgoCD setup completed successfully"
+
+          EOF
