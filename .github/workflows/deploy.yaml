@@ -18,13 +18,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Configure SSH to connect to EC2
+      # Step 2
+
       - name: Setup SSH Connection
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+           mkdir -p ~/.ssh
+           cp Argocd/deployargocd/Ec2.pem ~/.ssh/id_rsa
+           chmod 600 ~/.ssh/id_rsa
+           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       # Step 3: SSH into EC2 and execute deployment scripts
       - name: Deploy K3s and ArgoCD on EC2
