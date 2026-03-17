@@ -2,6 +2,7 @@
 
 set -e
 
+
 echo "🚀 Creating ArgoCD namespace..."
 kubectl create namespace argocd 2>/dev/null || echo "Namespace already exists"
 
